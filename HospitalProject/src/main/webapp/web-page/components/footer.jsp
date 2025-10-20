@@ -8,7 +8,7 @@
             <div class="logo-icon">
               <i class="bx bxs-hospital"></i>
             </div>
-            <span>Bệnh viện Tâm Đức</span>
+            <span>5 Star Hospital</span>
           </div>
           <p>
             Chăm sóc sức khỏe toàn diện với đội ngũ bác sĩ giàu kinh nghiệm và
