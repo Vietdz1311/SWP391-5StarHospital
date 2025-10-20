@@ -182,13 +182,11 @@ public class AuthController extends HttpServlet {
             String idCardNumber = request.getParameter("idCardNumber").trim();
             String birthDateStr = request.getParameter("birthDate").trim();
             String gender = request.getParameter("gender").trim();
-            String provinceCode = request.getParameter("provinceCity").trim();
-            String wardCommune = request.getParameter("wardCommune").trim();
             String detailedAddress = request.getParameter("detailedAddress").trim();
             String username = request.getParameter("username").trim();
 
             if (fullName.isEmpty() || email.isEmpty() || password.isEmpty() || phoneNumber.isEmpty() || idCardNumber.isEmpty() ||
-                birthDateStr.isEmpty() || gender.isEmpty() || provinceCode.isEmpty() || wardCommune.isEmpty() ||
+                birthDateStr.isEmpty() || gender.isEmpty() ||
                 detailedAddress.isEmpty() || username.isEmpty()) {
                 response.sendRedirect("auth?action=register&error=Please fill all required fields");
                 return;
@@ -204,21 +202,6 @@ public class AuthController extends HttpServlet {
 
             if (!gender.equals("Male") && !gender.equals("Female") && !gender.equals("Other")) {
                 response.sendRedirect("auth?action=register&error=Invalid gender");
-                return;
-            }
-
-            if (!isValidProvince(provinceCode)) {
-                response.sendRedirect("auth?action=register&error=Invalid province");
-                return;
-            }
-            if (!isValidCommune(wardCommune, provinceCode)) {
-                response.sendRedirect("auth?action=register&error=Invalid ward/commune");
-                return;
-            }
-
-            String provinceName = getProvinceName(provinceCode);
-            if (provinceName == null) {
-                response.sendRedirect("auth?action=register&error=Unable to retrieve province name");
                 return;
             }
 
@@ -280,8 +263,8 @@ public class AuthController extends HttpServlet {
             user.setIdCardNumber(idCardNumber);
             user.setBirthDate(birthDate);
             user.setGender(gender);
-            user.setProvinceCity(provinceName);
-            user.setWardCommune(wardCommune);
+            user.setProvinceCity("N/A");
+            user.setWardCommune("N/A");
             user.setDetailedAddress(detailedAddress);
             user.setUsername(username);
             user.setProfilePicture(profilePicture);
