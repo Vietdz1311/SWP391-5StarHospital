@@ -19,9 +19,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,7 +45,7 @@ public class AuthController extends HttpServlet {
     private static final String MALE_PROFILE_PIC = AppConstants.Avatar.MALE.getUrl();
     private static final String FEMALE_PROFILE_PIC = AppConstants.Avatar.FEMALE.getUrl();
     private static final String OTHER_PROFILE_PIC = AppConstants.Avatar.OTHER.getUrl();
-    
+
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
@@ -57,14 +59,14 @@ public class AuthController extends HttpServlet {
         switch (action) {
             case "register":
                 try {
-                    List<Map<String, String>> provinces = fetchProvinces();
-                    request.setAttribute("provinces", provinces);
-                } catch (Exception e) {
-                    System.out.println("Error fetching provinces: " + e.getMessage());
-                    request.setAttribute("error", "Failed to load provinces. Please try again.");
-                }
-                request.getRequestDispatcher("./web-page/register.jsp").forward(request, response);
-                break;
+                List<Map<String, String>> provinces = fetchProvinces();
+                request.setAttribute("provinces", provinces);
+            } catch (Exception e) {
+                System.out.println("Error fetching provinces: " + e.getMessage());
+                request.setAttribute("error", "Failed to load provinces. Please try again.");
+            }
+            request.getRequestDispatcher("./web-page/register.jsp").forward(request, response);
+            break;
             case "getCommunes":
                 String provinceCode = request.getParameter("provinceCode");
                 response.setContentType("application/json");
@@ -93,7 +95,7 @@ public class AuthController extends HttpServlet {
                 }
                 request.getRequestDispatcher("./web-page/resetPassword.jsp").forward(request, response);
                 break;
-              case "activate":
+            case "activate":
                 activateAccount(request, response);
                 break;
             default:
@@ -123,12 +125,12 @@ public class AuthController extends HttpServlet {
                 resetPassword(request, response);
                 break;
             default:
-                 loginUser(request, response);
+                loginUser(request, response);
                 break;
         }
     }
-    
-     private void activateAccount(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+    private void activateAccount(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String userIdStr = request.getParameter("userId");
         String token = request.getParameter("token");
 
@@ -172,7 +174,6 @@ public class AuthController extends HttpServlet {
         }
     }
 
-
     private void registerUser(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             String fullName = request.getParameter("fullName").trim();
@@ -182,14 +183,12 @@ public class AuthController extends HttpServlet {
             String idCardNumber = request.getParameter("idCardNumber").trim();
             String birthDateStr = request.getParameter("birthDate").trim();
             String gender = request.getParameter("gender").trim();
-            String provinceCode = request.getParameter("provinceCity").trim();
-            String wardCommune = request.getParameter("wardCommune").trim();
             String detailedAddress = request.getParameter("detailedAddress").trim();
             String username = request.getParameter("username").trim();
 
-            if (fullName.isEmpty() || email.isEmpty() || password.isEmpty() || phoneNumber.isEmpty() || idCardNumber.isEmpty() ||
-                birthDateStr.isEmpty() || gender.isEmpty() || provinceCode.isEmpty() || wardCommune.isEmpty() ||
-                detailedAddress.isEmpty() || username.isEmpty()) {
+            if (fullName.isEmpty() || email.isEmpty() || password.isEmpty() || phoneNumber.isEmpty() || idCardNumber.isEmpty()
+                    || birthDateStr.isEmpty() || gender.isEmpty()
+                    || detailedAddress.isEmpty() || username.isEmpty()) {
                 response.sendRedirect("auth?action=register&error=Please fill all required fields");
                 return;
             }
@@ -204,21 +203,6 @@ public class AuthController extends HttpServlet {
 
             if (!gender.equals("Male") && !gender.equals("Female") && !gender.equals("Other")) {
                 response.sendRedirect("auth?action=register&error=Invalid gender");
-                return;
-            }
-
-            if (!isValidProvince(provinceCode)) {
-                response.sendRedirect("auth?action=register&error=Invalid province");
-                return;
-            }
-            if (!isValidCommune(wardCommune, provinceCode)) {
-                response.sendRedirect("auth?action=register&error=Invalid ward/commune");
-                return;
-            }
-
-            String provinceName = getProvinceName(provinceCode);
-            if (provinceName == null) {
-                response.sendRedirect("auth?action=register&error=Unable to retrieve province name");
                 return;
             }
 
@@ -280,12 +264,11 @@ public class AuthController extends HttpServlet {
             user.setIdCardNumber(idCardNumber);
             user.setBirthDate(birthDate);
             user.setGender(gender);
-            user.setProvinceCity(provinceName);
-            user.setWardCommune(wardCommune);
+            user.setProvinceCity("N/A");
+            user.setWardCommune("N/A");
             user.setDetailedAddress(detailedAddress);
             user.setUsername(username);
             user.setProfilePicture(profilePicture);
-            user.setCountry("Vietnam"); 
             user.setStatus("pending");
             user.setCreatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());
@@ -304,67 +287,71 @@ public class AuthController extends HttpServlet {
 
                 int result = userDAO.addOTP(activation);
                 if (result > 0) {
-                   Email emailService = new Email();
-String activationLink = ApiEndpoint.ACTIVATE+String.format("&userId=%d&token=%s", userId, activationToken);
+                    Email emailService = new Email();
+                    String activationLink = ApiEndpoint.ACTIVATE + String.format("&userId=%d&token=%s", userId, activationToken);
 
-String emailBody = "<!DOCTYPE html>\n" +
-    "<html lang=\"vi\">\n" +
-    "<head>\n" +
-    "    <meta charset=\"UTF-8\">\n" +
-    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-    "    <title>Xác nhận tài khoản - Bệnh viện Tâm Đức</title>\n" +
-    "    <style>\n" +
-    "        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f4f7fa; margin: 0; padding: 20px; }\n" +
-    "        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }\n" +
-    "        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 40px 30px; text-align: center; }\n" +
-    "        .header h1 { margin: 0; font-size: 28px; font-weight: bold; }\n" +
-    "        .header p { margin: 10px 0 0; opacity: 0.9; }\n" +
-    "        .content { padding: 40px 30px; }\n" +
-    "        .greeting { font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 20px; }\n" +
-    "        .message { color: #4b5563; margin-bottom: 30px; }\n" +
-    "        .activation-section { background: #eff6ff; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; border: 1px solid #dbeafe; }\n" +
-    "        .activation-link { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 10px 0; transition: background 0.3s; }\n" +
-    "        .activation-link:hover { background: #2563eb; }\n" +
-    "        .footer { background: #f3f4f6; padding: 20px 30px; text-align: center; color: #6b7280; font-size: 14px; }\n" +
-    "        .footer a { color: #3b82f6; text-decoration: none; }\n" +
-    "        @media (max-width: 600px) { .container { margin: 10px; } .content { padding: 20px 15px; } }\n" +
-    "    </style>\n" +
-    "</head>\n" +
-    "<body>\n" +
-    "    <div class=\"container\">\n" +
-    "        <div class=\"header\">\n" +
-    "            <h1>Bệnh viện Tâm Đức</h1>\n" +
-    "            <p>Chăm sóc sức khỏe toàn diện</p>\n" +
-    "        </div>\n" +
-    "        <div class=\"content\">\n" +
-    "            <p class=\"greeting\">Kính gửi " + user.getFullName() + ",</p>\n" +
-    "            <p class=\"message\">\n" +
-    "                Chào mừng bạn đến với Bệnh viện Tâm Đức! Để hoàn tất việc kích hoạt tài khoản, vui lòng nhấp vào liên kết bên dưới trong vòng 24 giờ.\n" +
-    "            </p>\n" +
-    "            \n" +
-    "            <div class=\"activation-section\">\n" +
-    "                <p style=\"margin-bottom: 15px; color: #1e40af;\">Kích hoạt tài khoản của bạn ngay bây giờ:</p>\n" +
-    "                <a href=\"" + activationLink + "\" class=\"activation-link\">Kích hoạt tài khoản</a>\n" +
-    "                <p style=\"font-size: 14px; color: #6b7280; margin-top: 15px;\">Nếu liên kết không hoạt động, hãy sao chép và dán vào trình duyệt: " + activationLink + "</p>\n" +
-    "            </div>\n" +
-    "            \n" +
-    "            <p class=\"message\">\n" +
-    "                Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi qua hotline: <strong>1900-1234</strong>.\n" +
-    "            </p>\n" +
-    "            <p style=\"color: #6b7280; font-style: italic;\">Trân trọng,<br>Đội ngũ Bệnh viện Tâm Đức</p>\n" +
-    "        </div>\n" +
-    "        <div class=\"footer\">\n" +
-    "            <p>Bạn nhận được email này vì bạn đã đăng ký tài khoản tại Bệnh viện Tâm Đức.</p>\n" +
-    "            <p><a href=\"https://tamduc-hospital.com\">www.tamduc-hospital.com</a> | Hotline: 1900-1234</p>\n" +
-    "        </div>\n" +
-    "    </div>\n" +
-    "</body>\n" +
-    "</html>";
+                    String emailBody = "<!DOCTYPE html>\n"
+                            + "<html lang=\"vi\">\n"
+                            + "<head>\n"
+                            + "    <meta charset=\"UTF-8\">\n"
+                            + "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+                            + "    <title>Xác nhận tài khoản - Bệnh viện Tâm Đức</title>\n"
+                            + "    <style>\n"
+                            + "        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f4f7fa; margin: 0; padding: 20px; }\n"
+                            + "        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }\n"
+                            + "        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 40px 30px; text-align: center; }\n"
+                            + "        .header h1 { margin: 0; font-size: 28px; font-weight: bold; }\n"
+                            + "        .header p { margin: 10px 0 0; opacity: 0.9; }\n"
+                            + "        .content { padding: 40px 30px; }\n"
+                            + "        .greeting { font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 20px; }\n"
+                            + "        .message { color: #4b5563; margin-bottom: 30px; }\n"
+                            + "        .activation-section { background: #eff6ff; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; border: 1px solid #dbeafe; }\n"
+                            + "        .activation-link { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 10px 0; transition: background 0.3s; }\n"
+                            + "        .activation-link:hover { background: #2563eb; }\n"
+                            + "        .footer { background: #f3f4f6; padding: 20px 30px; text-align: center; color: #6b7280; font-size: 14px; }\n"
+                            + "        .footer a { color: #3b82f6; text-decoration: none; }\n"
+                            + "        @media (max-width: 600px) { .container { margin: 10px; } .content { padding: 20px 15px; } }\n"
+                            + "    </style>\n"
+                            + "</head>\n"
+                            + "<body>\n"
+                            + "    <div class=\"container\">\n"
+                            + "        <div class=\"header\">\n"
+                            + "            <h1>Bệnh viện Tâm Đức</h1>\n"
+                            + "            <p>Chăm sóc sức khỏe toàn diện</p>\n"
+                            + "        </div>\n"
+                            + "        <div class=\"content\">\n"
+                            + "            <p class=\"greeting\">Kính gửi " + user.getFullName() + ",</p>\n"
+                            + "            <p class=\"message\">\n"
+                            + "                Chào mừng bạn đến với Bệnh viện Tâm Đức! Để hoàn tất việc kích hoạt tài khoản, vui lòng nhấp vào liên kết bên dưới trong vòng 24 giờ.\n"
+                            + "            </p>\n"
+                            + "            \n"
+                            + "            <div class=\"activation-section\">\n"
+                            + "                <p style=\"margin-bottom: 15px; color: #1e40af;\">Kích hoạt tài khoản của bạn ngay bây giờ:</p>\n"
+                            + "                <a href=\"" + activationLink + "\" class=\"activation-link\">Kích hoạt tài khoản</a>\n"
+                            + "                <p style=\"font-size: 14px; color: #6b7280; margin-top: 15px;\">Nếu liên kết không hoạt động, hãy sao chép và dán vào trình duyệt: " + activationLink + "</p>\n"
+                            + "            </div>\n"
+                            + "            \n"
+                            + "            <p class=\"message\">\n"
+                            + "                Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi qua hotline: <strong>1900-1234</strong>.\n"
+                            + "            </p>\n"
+                            + "            <p style=\"color: #6b7280; font-style: italic;\">Trân trọng,<br>Đội ngũ Bệnh viện Tâm Đức</p>\n"
+                            + "        </div>\n"
+                            + "        <div class=\"footer\">\n"
+                            + "            <p>Bạn nhận được email này vì bạn đã đăng ký tài khoản tại Bệnh viện Tâm Đức.</p>\n"
+                            + "            <p><a href=\"https://tamduc-hospital.com\">www.tamduc-hospital.com</a> | Hotline: 1900-1234</p>\n"
+                            + "        </div>\n"
+                            + "    </div>\n"
+                            + "</body>\n"
+                            + "</html>";
 
-emailService.sendEmail(user.getEmail(), "Xác nhận tài khoản - Bệnh viện Tâm Đức", emailBody, null);
-response.sendRedirect("auth?success=Đăng ký thành công, vui lòng kiểm tra email để kích hoạt tài khoản");
+                    emailService.sendEmail(user.getEmail(), "Xác nhận tài khoản - Bệnh viện Tâm Đức", emailBody, null);
+                    String successMsg = "Đăng ký thành công, vui lòng kiểm tra email để kích hoạt tài khoản";
+                    String encodedMsg = URLEncoder.encode(successMsg, StandardCharsets.UTF_8.toString());
+                    response.sendRedirect("auth?success=" + encodedMsg);
                 } else {
-                    response.sendRedirect("auth?action=register&error=Failed to send activation email");
+                    String errorMsg = "Không thể gửi email kích hoạt";
+                    String encodedErr = URLEncoder.encode(errorMsg, StandardCharsets.UTF_8.toString());
+                    response.sendRedirect("auth?action=register&error=" + encodedErr);
                 }
             } else {
                 response.sendRedirect("auth?action=register&error=Registration failed");
@@ -385,12 +372,12 @@ response.sendRedirect("auth?success=Đăng ký thành công, vui lòng kiểm tr
         }
 
         UserDAO userDAO = new UserDAO();
-                    MD5Hashing md5 = new MD5Hashing();
+        MD5Hashing md5 = new MD5Hashing();
         User user = userDAO.login(email, md5.hashPassword(password));
         if (user != null) {
             HttpSession session = request.getSession();
             session.setAttribute("user", user);
-            response.sendRedirect("home"); 
+            response.sendRedirect("home");
         } else {
             response.sendRedirect("auth?error=Invalid email or password");
         }
@@ -428,67 +415,71 @@ response.sendRedirect("auth?success=Đăng ký thành công, vui lòng kiểm tr
 
         int result = userDAO.addOTP(otp);
         if (result > 0) {
-          Email emailService = new Email();
+            Email emailService = new Email();
 
-String emailBody = "<!DOCTYPE html>\n" +
-    "<html lang=\"vi\">\n" +
-    "<head>\n" +
-    "    <meta charset=\"UTF-8\">\n" +
-    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-    "    <title>Mã OTP Đặt Lại Mật Khẩu - Bệnh viện Tâm Đức</title>\n" +
-    "    <style>\n" +
-    "        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f4f7fa; margin: 0; padding: 20px; }\n" +
-    "        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }\n" +
-    "        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 40px 30px; text-align: center; }\n" +
-    "        .header h1 { margin: 0; font-size: 28px; font-weight: bold; }\n" +
-    "        .header p { margin: 10px 0 0; opacity: 0.9; }\n" +
-    "        .content { padding: 40px 30px; }\n" +
-    "        .greeting { font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 20px; }\n" +
-    "        .message { color: #4b5563; margin-bottom: 30px; }\n" +
-    "        .otp-section { background: #eff6ff; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0; border: 1px solid #dbeafe; }\n" +
-    "        .otp-code { display: inline-block; background: #3b82f6; color: white; padding: 20px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 32px; letter-spacing: 5px; margin: 10px 0; }\n" +
-    "        .footer { background: #f3f4f6; padding: 20px 30px; text-align: center; color: #6b7280; font-size: 14px; }\n" +
-    "        .footer a { color: #3b82f6; text-decoration: none; }\n" +
-    "        @media (max-width: 600px) { .container { margin: 10px; } .content { padding: 20px 15px; } .otp-code { font-size: 24px; padding: 15px 30px; } }\n" +
-    "    </style>\n" +
-    "</head>\n" +
-    "<body>\n" +
-    "    <div class=\"container\">\n" +
-    "        <div class=\"header\">\n" +
-    "            <h1>Bệnh viện Tâm Đức</h1>\n" +
-    "            <p>Chăm sóc sức khỏe toàn diện</p>\n" +
-    "        </div>\n" +
-    "        <div class=\"content\">\n" +
-    "            <p class=\"greeting\">Kính gửi " + user.getFullName() + ",</p>\n" +
-    "            <p class=\"message\">\n" +
-    "                Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình. Để tiếp tục, vui lòng sử dụng mã OTP bên dưới. Mã này có hiệu lực trong vòng 10 phút.\n" +
-    "            </p>\n" +
-    "            \n" +
-    "            <div class=\"otp-section\">\n" +
-    "                <p style=\"margin-bottom: 15px; color: #1e40af; font-size: 18px;\">Mã OTP của bạn:</p>\n" +
-    "                <div class=\"otp-code\">" + otpCode + "</div>\n" +
-    "                <p style=\"font-size: 14px; color: #6b7280; margin-top: 15px;\">Nhập mã này vào trang web để hoàn tất quá trình đặt lại mật khẩu.</p>\n" +
-    "            </div>\n" +
-    "            \n" +
-    "            <p class=\"message\">\n" +
-    "                Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi qua hotline: <strong>1900-1234</strong>.\n" +
-    "            </p>\n" +
-    "            <p style=\"color: #6b7280; font-style: italic;\">Trân trọng,<br>Đội ngũ Bệnh viện Tâm Đức</p>\n" +
-    "        </div>\n" +
-    "        <div class=\"footer\">\n" +
-    "            <p>Bạn nhận được email này vì có hoạt động liên quan đến tài khoản của bạn tại Bệnh viện Tâm Đức.</p>\n" +
-    "            <p><a href=\"https://tamduc-hospital.com\">www.tamduc-hospital.com</a> | Hotline: 1900-1234</p>\n" +
-    "        </div>\n" +
-    "    </div>\n" +
-    "</body>\n" +
-    "</html>";
+            String emailBody = "<!DOCTYPE html>\n"
+                    + "<html lang=\"vi\">\n"
+                    + "<head>\n"
+                    + "    <meta charset=\"UTF-8\">\n"
+                    + "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+                    + "    <title>Mã OTP Đặt Lại Mật Khẩu - Bệnh viện Tâm Đức</title>\n"
+                    + "    <style>\n"
+                    + "        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f4f7fa; margin: 0; padding: 20px; }\n"
+                    + "        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }\n"
+                    + "        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 40px 30px; text-align: center; }\n"
+                    + "        .header h1 { margin: 0; font-size: 28px; font-weight: bold; }\n"
+                    + "        .header p { margin: 10px 0 0; opacity: 0.9; }\n"
+                    + "        .content { padding: 40px 30px; }\n"
+                    + "        .greeting { font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 20px; }\n"
+                    + "        .message { color: #4b5563; margin-bottom: 30px; }\n"
+                    + "        .otp-section { background: #eff6ff; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0; border: 1px solid #dbeafe; }\n"
+                    + "        .otp-code { display: inline-block; background: #3b82f6; color: white; padding: 20px 40px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 32px; letter-spacing: 5px; margin: 10px 0; }\n"
+                    + "        .footer { background: #f3f4f6; padding: 20px 30px; text-align: center; color: #6b7280; font-size: 14px; }\n"
+                    + "        .footer a { color: #3b82f6; text-decoration: none; }\n"
+                    + "        @media (max-width: 600px) { .container { margin: 10px; } .content { padding: 20px 15px; } .otp-code { font-size: 24px; padding: 15px 30px; } }\n"
+                    + "    </style>\n"
+                    + "</head>\n"
+                    + "<body>\n"
+                    + "    <div class=\"container\">\n"
+                    + "        <div class=\"header\">\n"
+                    + "            <h1>Bệnh viện Tâm Đức</h1>\n"
+                    + "            <p>Chăm sóc sức khỏe toàn diện</p>\n"
+                    + "        </div>\n"
+                    + "        <div class=\"content\">\n"
+                    + "            <p class=\"greeting\">Kính gửi " + user.getFullName() + ",</p>\n"
+                    + "            <p class=\"message\">\n"
+                    + "                Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình. Để tiếp tục, vui lòng sử dụng mã OTP bên dưới. Mã này có hiệu lực trong vòng 10 phút.\n"
+                    + "            </p>\n"
+                    + "            \n"
+                    + "            <div class=\"otp-section\">\n"
+                    + "                <p style=\"margin-bottom: 15px; color: #1e40af; font-size: 18px;\">Mã OTP của bạn:</p>\n"
+                    + "                <div class=\"otp-code\">" + otpCode + "</div>\n"
+                    + "                <p style=\"font-size: 14px; color: #6b7280; margin-top: 15px;\">Nhập mã này vào trang web để hoàn tất quá trình đặt lại mật khẩu.</p>\n"
+                    + "            </div>\n"
+                    + "            \n"
+                    + "            <p class=\"message\">\n"
+                    + "                Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi qua hotline: <strong>1900-1234</strong>.\n"
+                    + "            </p>\n"
+                    + "            <p style=\"color: #6b7280; font-style: italic;\">Trân trọng,<br>Đội ngũ Bệnh viện Tâm Đức</p>\n"
+                    + "        </div>\n"
+                    + "        <div class=\"footer\">\n"
+                    + "            <p>Bạn nhận được email này vì có hoạt động liên quan đến tài khoản của bạn tại Bệnh viện Tâm Đức.</p>\n"
+                    + "            <p><a href=\"https://tamduc-hospital.com\">www.tamduc-hospital.com</a> | Hotline: 1900-1234</p>\n"
+                    + "        </div>\n"
+                    + "    </div>\n"
+                    + "</body>\n"
+                    + "</html>";
 
-emailService.sendEmail(user.getEmail(), "Xác nhận mã OTP đặt lại mật khẩu - Bệnh viện Tâm Đức", emailBody, null);
-HttpSession session = request.getSession();
-session.setAttribute("resetUserId", user.getId());
-response.sendRedirect("auth?action=verifyOTP&success=OTP đã được gửi đến email của bạn");
+            emailService.sendEmail(user.getEmail(), "Xác nhận mã OTP đặt lại mật khẩu - Bệnh viện Tâm Đức", emailBody, null);
+            HttpSession session = request.getSession();
+            session.setAttribute("resetUserId", user.getId());
+            String successMsg = "OTP đã được gửi đến email của bạn";
+            String encodedMsg = URLEncoder.encode(successMsg, StandardCharsets.UTF_8.toString());
+            response.sendRedirect("auth?action=verifyOTP&success=" + encodedMsg);
         } else {
-            response.sendRedirect("auth?action=forgetPassword&error=Failed to send OTP");
+            String successMsg = "Failed to send OTP";
+            String encodedMsg = URLEncoder.encode(successMsg, StandardCharsets.UTF_8.toString());
+            response.sendRedirect("auth?action=forgetPassword&error=" + encodedMsg);
         }
     }
 
@@ -559,7 +550,6 @@ response.sendRedirect("auth?action=verifyOTP&success=OTP đã được gửi đ�
         Random random = new Random();
         return String.format("%06d", random.nextInt(1000000));
     }
-
 
     private List<Map<String, String>> fetchProvinces() throws Exception {
         String json = getJsonFromUrl(PROVINCES_API);

@@ -7,6 +7,7 @@ import DAO.UserDAO;
 import Dao.AppointmentDAO;
 import Dao.AreaDAO;
 import Dao.FamilyMemberDAO;
+import Dao.HealthInsuranceDAO;
 import Dao.RoomDAO;
 import Dao.TimeSlotDAO;
 import Model.*;

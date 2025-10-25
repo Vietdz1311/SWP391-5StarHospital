@@ -1,5 +1,6 @@
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Dao\OtpDAO.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Model\Room.java
+D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Controllers\DoctorController.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Model\Category.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Controllers\BookingConfirmController.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Model\Hospital.java
@@ -20,6 +21,7 @@ D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Model\Role.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Controllers\SpecializationController.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Model\Drug.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Model\Specialization.java
+D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Dao\HealthInsuranceDAO.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Utils\MD5Hashing.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Dao\DoctorDAO.java
 D:\5StarHospital\HospitalProject\HospitalProject\src\main\java\Utils\AppConstants.java
