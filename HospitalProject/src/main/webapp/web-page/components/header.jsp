@@ -86,7 +86,7 @@
                                     <i class="bx bx-chevron-down text-gray-500 transition-transform duration-200"></i>
                                 </button>
                                 <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible transform scale-95 transition-all duration-200 origin-top-right z-50">
-                                    <a href="profile" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-xl transition duration-200">
+                                    <a href="${pageContext.request.contextPath}/ViewProfileServlet" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-t-xl transition duration-200">
                                         <i class="bx bx-user-circle mr-3 text-blue-600"></i>
                                         Hồ sơ
                                     </a>
@@ -102,7 +102,7 @@
                             </div>
                         </c:when>
                         <c:otherwise>
-                            <a href="auth" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:-translate-y-0.5">
+                            <a href="./auth" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full shadow-md hover:shadow-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:-translate-y-0.5">
                                 <i class="bx bx-log-in mr-2"></i>
                                 Đăng nhập
                             </a>

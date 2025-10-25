@@ -70,8 +70,7 @@ public class UserDAO {
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         String query = "SELECT * FROM Users";
-        try (PreparedStatement statement = conn.prepareStatement(query);
-             ResultSet resultSet = statement.executeQuery()) {
+        try (PreparedStatement statement = conn.prepareStatement(query); ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 users.add(mapUser(resultSet));
             }
@@ -82,10 +81,12 @@ public class UserDAO {
     }
 
     public int addUser(User user) {
-        String query = "INSERT INTO Users (role_id, full_name, id_card_number, phone_number, birth_date, gender, " +
-                      "original_address, country, ethnicity, occupation, province_city, ward_commune, detailed_address, " +
-                      "username, profile_picture, email, password, status, created_at, updated_at, created_by, updated_by) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO Users ("
+                + "role_id, full_name, id_card_number, phone_number, birth_date, gender, "
+                + "address, username, profile_picture, email, password, status, "
+                + "created_at, updated_at, created_by, updated_by"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
         try (PreparedStatement statement = conn.prepareStatement(query, PreparedStatement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, user.getRoleId());
             statement.setString(2, user.getFullName());
@@ -93,33 +94,48 @@ public class UserDAO {
             statement.setString(4, user.getPhoneNumber());
             statement.setObject(5, user.getBirthDate());
             statement.setString(6, user.getGender());
-            statement.setString(7, user.getOriginalAddress());
-            statement.setString(8, user.getCountry());
-            statement.setString(9, user.getEthnicity());
-            statement.setString(10, user.getOccupation());
-            statement.setString(11, user.getProvinceCity());
-            statement.setString(12, user.getWardCommune());
-            statement.setString(13, user.getDetailedAddress());
-            statement.setString(14, user.getUsername());
-            statement.setString(15, user.getProfilePicture());
-            statement.setString(16, user.getEmail());
-            statement.setString(17, user.getPassword());
-            statement.setString(18, user.getStatus());
-            statement.setObject(19, user.getCreatedAt());
-            statement.setObject(20, user.getUpdatedAt());
-            statement.setObject(21, user.getCreatedBy());
-            statement.setObject(22, user.getUpdatedBy());
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected > 0) {
-                ResultSet generatedKeys = statement.getGeneratedKeys();
-                if (generatedKeys.next()) {
-                    return generatedKeys.getInt(1);
+            statement.setString(7, user.getAddress());            // chỉ 1 cột address
+            statement.setString(8, user.getUsername());
+            statement.setString(9, user.getProfilePicture());
+            statement.setString(10, user.getEmail());
+            statement.setString(11, user.getPassword());          // đã MD5 ở Controller
+            statement.setString(12, user.getStatus());            // pending/active...
+            statement.setObject(13, user.getCreatedAt());
+            statement.setObject(14, user.getUpdatedAt());
+            statement.setObject(15, user.getCreatedBy());
+            statement.setObject(16, user.getUpdatedBy());
+
+            int rows = statement.executeUpdate();
+            if (rows > 0) {
+                try (ResultSet rs = statement.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
                 }
             }
         } catch (SQLException e) {
             System.out.println("Add user error: " + e.getMessage());
         }
         return 0;
+    }
+
+    public boolean updateProfile(User u) throws SQLException {
+        String sql = "UPDATE Users SET full_name=?, phone_number=?, birth_date=?, gender=?, address=?, email=?, profile_picture=?, updated_at=SYSDATETIME() WHERE id=?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, u.getFullName());
+            ps.setString(2, u.getPhoneNumber());
+            if (u.getBirthDate() != null) {
+                ps.setDate(3, java.sql.Date.valueOf(u.getBirthDate()));
+            } else {
+                ps.setNull(3, java.sql.Types.DATE);
+            }
+            ps.setString(4, u.getGender());
+            ps.setString(5, u.getAddress());
+            ps.setString(6, u.getEmail());
+            ps.setString(7, u.getProfilePicture());
+            ps.setInt(8, u.getId());
+            return ps.executeUpdate() > 0;
+        }
     }
 
     public int updatePassword(String password, int id) {
@@ -162,7 +178,7 @@ public class UserDAO {
         }
         return false;
     }
-    
+
     public boolean isIdCardNumberExists(String idCardNumber, int excludeId) {
         String query = "SELECT * FROM Users WHERE id_card_number = ? AND id != ?";
         try (PreparedStatement statement = conn.prepareStatement(query)) {
@@ -192,8 +208,8 @@ public class UserDAO {
     }
 
     public int addOTP(OTP otp) {
-        String query = "INSERT INTO OTP (user_id, otp_code, purpose, expiry_time, status, created_at, updated_at, created_by, updated_by) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO OTP (user_id, otp_code, purpose, expiry_time, status, created_at, updated_at, created_by, updated_by) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = conn.prepareStatement(query)) {
             statement.setInt(1, otp.getUserId());
             statement.setString(2, otp.getOtpCode());
@@ -210,8 +226,8 @@ public class UserDAO {
         }
         return 0;
     }
-    
-     public int activateUser(int id) {
+
+    public int activateUser(int id) {
         String query = "UPDATE Users SET status = 'active', updated_at = ? WHERE id = ? AND status = 'pending'";
         try (PreparedStatement statement = conn.prepareStatement(query)) {
             statement.setObject(1, LocalDateTime.now());
@@ -262,6 +278,8 @@ public class UserDAO {
         }
         return 0;
     }
+    
+    
 
     private User mapUser(ResultSet resultSet) throws SQLException {
         User user = new User();
@@ -272,13 +290,7 @@ public class UserDAO {
         user.setPhoneNumber(resultSet.getString("phone_number"));
         user.setBirthDate(resultSet.getObject("birth_date", LocalDate.class));
         user.setGender(resultSet.getString("gender"));
-        user.setOriginalAddress(resultSet.getString("original_address"));
-        user.setCountry(resultSet.getString("country"));
-        user.setEthnicity(resultSet.getString("ethnicity"));
-        user.setOccupation(resultSet.getString("occupation"));
-        user.setProvinceCity(resultSet.getString("province_city"));
-        user.setWardCommune(resultSet.getString("ward_commune"));
-        user.setDetailedAddress(resultSet.getString("detailed_address"));
+        user.setAddress(resultSet.getString("address"));
         user.setUsername(resultSet.getString("username"));
         user.setProfilePicture(resultSet.getString("profile_picture"));
         user.setEmail(resultSet.getString("email"));
