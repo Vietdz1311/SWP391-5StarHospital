@@ -278,8 +278,209 @@ public class UserDAO {
         }
         return 0;
     }
-    
-    
+
+//admin
+    // 1) Đếm tổng theo bộ lọc (q/roleName/status)
+    public int countUsers(String q, String roleName, String status) {
+        StringBuilder sb = new StringBuilder(
+                "SELECT COUNT(*) FROM Users u JOIN Roles r ON u.role_id = r.id WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (q != null && !q.isBlank()) {
+            sb.append(" AND (u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)");
+            String like = "%" + q.trim() + "%";
+            params.add(like);
+            params.add(like);
+            params.add(like);
+            params.add(like);
+        }
+        if (roleName != null && !roleName.isBlank()) {
+            sb.append(" AND r.role_name = ?");
+            params.add(roleName);
+        }
+        if (status != null && !status.isBlank()) {
+            sb.append(" AND u.status = ?");
+            params.add(status);
+        }
+
+        try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            System.out.println("countUsers error: " + e.getMessage());
+            return 0;
+        }
+    }
+
+// 2) Tìm kiếm có phân trang
+    public List<User> searchUsers(String q, String roleName, String status, int page, int size) {
+        StringBuilder sb = new StringBuilder(
+                "SELECT u.* FROM Users u JOIN Roles r ON u.role_id = r.id WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (q != null && !q.isBlank()) {
+            sb.append(" AND (u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.phone_number LIKE ?)");
+            String like = "%" + q.trim() + "%";
+            params.add(like);
+            params.add(like);
+            params.add(like);
+            params.add(like);
+        }
+        if (roleName != null && !roleName.isBlank()) {
+            sb.append(" AND r.role_name = ?");
+            params.add(roleName);
+        }
+        if (status != null && !status.isBlank()) {
+            sb.append(" AND u.status = ?");
+            params.add(status);
+        }
+
+        sb.append(" ORDER BY u.created_at DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        int offset = Math.max(0, (page - 1) * size);
+        params.add(offset);
+        params.add(size);
+
+        List<User> list = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("searchUsers error: " + e.getMessage());
+        }
+        return list;
+    }
+
+// 3) Đổi trạng thái (và ghi updated_by)
+    public boolean changeStatus(int id, String newStatus, Integer adminId) {
+        String sql = "UPDATE Users SET status=?, updated_at=SYSDATETIME(), updated_by=? WHERE id=?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            if (adminId != null) {
+                ps.setInt(2, adminId);
+            } else {
+                ps.setNull(2, java.sql.Types.INTEGER);
+            }
+            ps.setInt(3, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("changeStatus error: " + e.getMessage());
+            return false;
+        }
+    }
+
+// 4) Reset mật khẩu (overload có updated_by)
+    public boolean resetPassword(int id, String passwordHash, Integer adminId) {
+        String sql = "UPDATE Users SET password=?, updated_at=SYSDATETIME(), updated_by=? WHERE id=?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, passwordHash);
+            if (adminId != null) {
+                ps.setInt(2, adminId);
+            } else {
+                ps.setNull(2, java.sql.Types.INTEGER);
+            }
+            ps.setInt(3, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("resetPassword error: " + e.getMessage());
+            return false;
+        }
+    }
+
+// 5) Xóa mềm (đặt inactive)
+    public boolean softDelete(int id, Integer adminId) {
+        return changeStatus(id, "inactive", adminId);
+    }
+
+// (Tuỳ chọn) Lấy user kèm role_name nếu bạn cần hiển thị tên vai trò
+    public User getUserWithRoleById(int id) {
+        String sql = "SELECT u.* FROM Users u JOIN Roles r ON u.role_id=r.id WHERE u.id=?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("getUserWithRoleById error: " + e.getMessage());
+        }
+        return null;
+    }
+
+    // 6) Cập nhật trường "tài khoản" cho Admin (username, id_card_number, role_id)
+    public boolean updateAccountFields(int id, String username, String idCardNumber, int roleId) throws SQLException {
+        StringBuilder sb = new StringBuilder("UPDATE Users SET updated_at = SYSDATETIME()");
+        // build động các trường cần cập nhật
+        if (username != null) {
+            sb.append(", username = ?");
+        }
+        if (idCardNumber != null) {
+            sb.append(", id_card_number = ?");
+        }
+        if (roleId > 0) {
+            sb.append(", role_id = ?");
+        }
+        sb.append(" WHERE id = ?");
+
+        try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            int idx = 1;
+            if (username != null) {
+                ps.setString(idx++, username);
+            }
+            if (idCardNumber != null) {
+                ps.setString(idx++, idCardNumber);
+            }
+            if (roleId > 0) {
+                ps.setInt(idx++, roleId);
+            }
+            ps.setInt(idx++, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+// 7) (Tuỳ chọn) Cập nhật cả status luôn nếu bạn muốn gộp
+    public boolean updateAccountFieldsWithStatus(int id, String username, String idCardNumber, int roleId, String status) throws SQLException {
+        StringBuilder sb = new StringBuilder("UPDATE Users SET updated_at = SYSDATETIME()");
+        if (username != null) {
+            sb.append(", username = ?");
+        }
+        if (idCardNumber != null) {
+            sb.append(", id_card_number = ?");
+        }
+        if (roleId > 0) {
+            sb.append(", role_id = ?");
+        }
+        if (status != null) {
+            sb.append(", status = ?");
+        }
+        sb.append(" WHERE id = ?");
+
+        try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            int idx = 1;
+            if (username != null) {
+                ps.setString(idx++, username);
+            }
+            if (idCardNumber != null) {
+                ps.setString(idx++, idCardNumber);
+            }
+            if (roleId > 0) {
+                ps.setInt(idx++, roleId);
+            }
+            if (status != null) {
+                ps.setString(idx++, status);
+            }
+            ps.setInt(idx++, id);
+            return ps.executeUpdate() > 0;
+        }
+    }
 
     private User mapUser(ResultSet resultSet) throws SQLException {
         User user = new User();

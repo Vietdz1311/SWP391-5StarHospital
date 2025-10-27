@@ -27,6 +27,7 @@ Utils\Email$1.class
 Controllers\UpdateProfileServlet.class
 Model\Appointment.class
 Model\Specialization.class
+Controllers\UserManagerServlet.class
 Model\User.class
 Utils\Generate.class
 Controllers\ViewProfileServlet.class
