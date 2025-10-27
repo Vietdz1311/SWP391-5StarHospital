@@ -1,5 +1,6 @@
-package DAO;
+package Dao;
 
+import Dao.UserDAO;
 import DBConnection.DBConnection;
 import Model.Doctor;
 import Model.Specialization;

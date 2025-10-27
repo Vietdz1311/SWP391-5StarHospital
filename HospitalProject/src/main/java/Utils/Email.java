@@ -41,7 +41,7 @@ public class Email {
         try {
             msg.addHeader("Content-type", "text/HTML; charset=UTF-8");
             // Người gửi
-            msg.setFrom(new InternetAddress(from, username));
+            msg.setFrom(new InternetAddress(from, MimeUtility.encodeText(username, "UTF-8", "B")));
             // Người nhận
             msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to, false));
             // Tiêu đề email

@@ -15,7 +15,7 @@ public class User {
     private String country;
     private String ethnicity;
     private String occupation;
-    private String provinceCity; 
+        private String provinceCity; 
     private String wardCommune; 
     private String detailedAddress; 
     private String username;

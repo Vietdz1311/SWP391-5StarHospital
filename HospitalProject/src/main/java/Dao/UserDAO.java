@@ -1,4 +1,4 @@
-package DAO;
+package Dao;
 
 import DBConnection.DBConnection;
 import Model.OTP;
@@ -83,32 +83,25 @@ public class UserDAO {
 
     public int addUser(User user) {
         String query = "INSERT INTO Users (role_id, full_name, id_card_number, phone_number, birth_date, gender, " +
-                      "original_address, country, ethnicity, occupation, province_city, ward_commune, detailed_address, " +
                       "username, profile_picture, email, password, status, created_at, updated_at, created_by, updated_by) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = conn.prepareStatement(query, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, user.getRoleId());
-            statement.setString(2, user.getFullName());
-            statement.setString(3, user.getIdCardNumber());
-            statement.setString(4, user.getPhoneNumber());
-            statement.setObject(5, user.getBirthDate());
-            statement.setString(6, user.getGender());
-            statement.setString(7, user.getOriginalAddress());
-            statement.setString(8, user.getCountry());
-            statement.setString(9, user.getEthnicity());
-            statement.setString(10, user.getOccupation());
-            statement.setString(11, user.getProvinceCity());
-            statement.setString(12, user.getWardCommune());
-            statement.setString(13, user.getDetailedAddress());
-            statement.setString(14, user.getUsername());
-            statement.setString(15, user.getProfilePicture());
-            statement.setString(16, user.getEmail());
-            statement.setString(17, user.getPassword());
-            statement.setString(18, user.getStatus());
-            statement.setObject(19, user.getCreatedAt());
-            statement.setObject(20, user.getUpdatedAt());
-            statement.setObject(21, user.getCreatedBy());
-            statement.setObject(22, user.getUpdatedBy());
+            int i = 1;
+            statement.setInt(i++, user.getRoleId());
+            statement.setString(i++, user.getFullName());
+            statement.setString(i++, user.getIdCardNumber());
+            statement.setString(i++, user.getPhoneNumber());
+            statement.setObject(i++, user.getBirthDate());
+            statement.setString(i++, user.getGender());
+            statement.setString(i++, user.getUsername());
+            statement.setString(i++, user.getProfilePicture());
+            statement.setString(i++, user.getEmail());
+            statement.setString(i++, user.getPassword());
+            statement.setString(i++, user.getStatus());
+            statement.setObject(i++, user.getCreatedAt());
+            statement.setObject(i++, user.getUpdatedAt());
+            statement.setObject(i++, user.getCreatedBy());
+            statement.setObject(i++, user.getUpdatedBy());
             int rowsAffected = statement.executeUpdate();
             if (rowsAffected > 0) {
                 ResultSet generatedKeys = statement.getGeneratedKeys();
@@ -272,13 +265,6 @@ public class UserDAO {
         user.setPhoneNumber(resultSet.getString("phone_number"));
         user.setBirthDate(resultSet.getObject("birth_date", LocalDate.class));
         user.setGender(resultSet.getString("gender"));
-        user.setOriginalAddress(resultSet.getString("original_address"));
-        user.setCountry(resultSet.getString("country"));
-        user.setEthnicity(resultSet.getString("ethnicity"));
-        user.setOccupation(resultSet.getString("occupation"));
-        user.setProvinceCity(resultSet.getString("province_city"));
-        user.setWardCommune(resultSet.getString("ward_commune"));
-        user.setDetailedAddress(resultSet.getString("detailed_address"));
         user.setUsername(resultSet.getString("username"));
         user.setProfilePicture(resultSet.getString("profile_picture"));
         user.setEmail(resultSet.getString("email"));
