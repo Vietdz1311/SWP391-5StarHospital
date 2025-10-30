@@ -2,18 +2,18 @@ package Controllers;
 
 import DAO.UserDAO;
 import Model.User;
+import Utils.MD5Hashing;   // ✅ thêm dòng này
 import java.io.IOException;
-import java.io.PrintWriter;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @WebServlet(name = "UserManagerServlet",
         urlPatterns = {"/UserManagerServlet", "/admin/users"})
@@ -77,15 +77,14 @@ public class UserManagerServlet extends HttpServlet {
         }
     }
 
-    //debug
-    
+    // =================== DEBUG (giữ nguyên) ===================
     private static void debugListJsp(HttpServletRequest req) {
-    var sc = req.getServletContext();
-    var paths = sc.getResourcePaths("/web-page/admin/");
-    System.out.println("[DEBUG] JSP under /web-page/admin/: " + paths);
-    System.out.println("[DEBUG] realPath userList.jsp = " + sc.getRealPath("/web-page/admin/userList.jsp"));
-}
-    
+        var sc = req.getServletContext();
+        var paths = sc.getResourcePaths("/web-page/admin/");
+        System.out.println("[DEBUG] JSP under /web-page/admin/: " + paths);
+        System.out.println("[DEBUG] realPath userList.jsp = " + sc.getRealPath("/web-page/admin/userList.jsp"));
+    }
+
     /* ========================== LIST/EDIT FORMS ========================== */
     private void handleList(HttpServletRequest request, HttpServletResponse response)
             throws Exception {
@@ -106,7 +105,7 @@ public class UserManagerServlet extends HttpServlet {
         request.setAttribute("size", size);
         request.setAttribute("total", total);
         request.setAttribute("users", users);
-        
+
         debugListJsp(request);
         forward(request, response, VIEW_BASE + "userList.jsp");
     }
@@ -166,10 +165,15 @@ public class UserManagerServlet extends HttpServlet {
             throw new IllegalArgumentException("Username đã tồn tại.");
         }
 
+        // ========== TẠO MỚI ==========
         if (id <= 0) {
             if (password == null || password.isEmpty()) {
                 throw new IllegalArgumentException("Vui lòng nhập mật khẩu khi tạo mới.");
             }
+
+            // ✅ mã hóa giống AuthController
+            MD5Hashing md5 = new MD5Hashing();
+
             User u = new User();
             u.setRoleId(roleId);
             u.setFullName(fullName);
@@ -181,7 +185,7 @@ public class UserManagerServlet extends HttpServlet {
             u.setUsername(username);
             u.setProfilePicture(profilePic);
             u.setEmail(email);
-            u.setPassword(password); // theo yêu cầu: không băm
+            u.setPassword(md5.hashPassword(password)); // ✅ mã hóa
             u.setStatus(status == null ? "pending" : status);
             u.setCreatedAt(LocalDateTime.now());
             u.setUpdatedAt(LocalDateTime.now());
@@ -195,7 +199,10 @@ public class UserManagerServlet extends HttpServlet {
 
             response.sendRedirect(request.getContextPath() + "/admin/users?action=list&created=1");
             return;
-        } else {
+        }
+
+        // ========== CẬP NHẬT ==========
+        else {
             User u = new User();
             u.setId(id);
             u.setFullName(fullName);
@@ -205,21 +212,27 @@ public class UserManagerServlet extends HttpServlet {
             u.setAddress(address);
             u.setEmail(email);
             u.setProfilePicture(profilePic);
+
+            // cập nhật thông tin hồ sơ
             if (!userDAO.updateProfile(u)) {
                 throw new RuntimeException("Cập nhật hồ sơ thất bại.");
             }
 
+            // cập nhật các trường tài khoản (username, idCard, role)
             if (!userDAOUpdateAccountFields(u, username, idCard, roleId)) {
-                // không ném lỗi cứng
+                // không ném lỗi cứng để tránh chặn toàn bộ cập nhật
             }
 
+            // nếu admin nhập mật khẩu mới → mã hóa rồi lưu
             if (password != null && !password.isEmpty()) {
-                int rows = userDAO.updatePassword(password, id);
+                MD5Hashing md5 = new MD5Hashing();
+                int rows = userDAO.updatePassword(md5.hashPassword(password), id);  // ✅ mã hóa
                 if (rows <= 0) {
                     throw new RuntimeException("Cập nhật mật khẩu thất bại.");
                 }
             }
 
+            // cập nhật trạng thái nếu có
             if (status != null && !status.isEmpty()) {
                 boolean ok = userDAO.changeStatus(id, status, null);
                 if (!ok) {
@@ -255,7 +268,9 @@ public class UserManagerServlet extends HttpServlet {
             throw new IllegalArgumentException("Thiếu tham số id hoặc mật khẩu mới.");
         }
 
-        int rows = userDAO.updatePassword(newPassword, id);
+        // ✅ mã hóa trước khi update
+        MD5Hashing md5 = new MD5Hashing();
+        int rows = userDAO.updatePassword(md5.hashPassword(newPassword), id);
         if (rows <= 0) {
             throw new RuntimeException("Đổi mật khẩu thất bại.");
         }
