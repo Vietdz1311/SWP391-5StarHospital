@@ -92,7 +92,6 @@ public class UpdateProfileServlet extends HttpServlet {
 
         req.setCharacterEncoding("UTF-8");
 
-        // 1) Lấy user từ session (đồng bộ với AuthController & ViewProfileServlet)
         HttpSession session = req.getSession(false);
         User sessionUser = (session != null) ? (User) session.getAttribute("user") : null;
         if (sessionUser == null) {
@@ -101,14 +100,12 @@ public class UpdateProfileServlet extends HttpServlet {
         }
         int userId = sessionUser.getId();
 
-        // 2) Lấy user hiện tại từ DB
         User current = userDAO.getUserById(userId);
         if (current == null) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "User not found");
             return;
         }
 
-        // 3) Đọc input
         String fullName = req.getParameter("full_name");
         String phoneNumber = req.getParameter("phone_number");
         String birthDateStr = req.getParameter("birth_date");
@@ -116,11 +113,10 @@ public class UpdateProfileServlet extends HttpServlet {
         String address = req.getParameter("address");
         String email = req.getParameter("email");
 
-        // 4) Parse ngày sinh
         LocalDate birthDate = null;
         if (birthDateStr != null && !birthDateStr.isBlank()) {
             try {
-                birthDate = LocalDate.parse(birthDateStr); // yyyy-MM-dd
+                birthDate = LocalDate.parse(birthDateStr);
             } catch (Exception e) {
                 req.setAttribute("error", "Ngày sinh không hợp lệ (yyyy-MM-dd).");
                 req.setAttribute("user", current);
@@ -129,7 +125,48 @@ public class UpdateProfileServlet extends HttpServlet {
             }
         }
 
-        // 5) Upload ảnh (nếu có)
+        // ==== 1️⃣ VALIDATE CƠ BẢN ====
+        if (fullName == null || fullName.trim().isEmpty()) {
+            req.setAttribute("error", "Họ và tên không được để trống.");
+            req.setAttribute("user", current);
+            req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
+            return;
+        }
+        // Chỉ cho phép ký tự chữ, khoảng trắng và dấu tiếng Việt
+        if (!fullName.matches("^[\\p{L} .'-]+$")) {
+            req.setAttribute("error", "Họ và tên chỉ được chứa chữ cái và dấu cách.");
+            req.setAttribute("user", current);
+            req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
+            return;
+        }
+
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            req.setAttribute("error", "Số điện thoại không được để trống.");
+            req.setAttribute("user", current);
+            req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
+            return;
+        }
+        if (!phoneNumber.matches("^0\\d{9}$")) {
+            req.setAttribute("error", "Số điện thoại không hợp lệ! Phải bắt đầu bằng 0 và có chính xác 10 chữ số.");
+            req.setAttribute("user", current);
+            req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
+            return;
+        }
+
+        if (email == null || email.trim().isEmpty()) {
+            req.setAttribute("error", "Email không được để trống.");
+            req.setAttribute("user", current);
+            req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
+            return;
+        }
+        // Regex chuẩn cho định dạng email
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")) {
+            req.setAttribute("error", "Định dạng email không hợp lệ. Vui lòng nhập lại.");
+            req.setAttribute("user", current);
+            req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
+            return;
+        }
+
         String profilePicturePath = current.getProfilePicture();
         Part avatar = req.getPart("profile_picture");
         if (avatar != null && avatar.getSize() > 0) {
@@ -150,20 +187,17 @@ public class UpdateProfileServlet extends HttpServlet {
             File file = new File(dir, filename);
 
             Files.copy(avatar.getInputStream(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            // Lưu đường dẫn tương đối (KHÔNG kèm context path)
             profilePicturePath = "uploads/avatars/" + filename;
         }
 
-        // 6) Gán dữ liệu mới
         current.setFullName(z(fullName));
         current.setPhoneNumber(z(phoneNumber));
         current.setBirthDate(birthDate);
-        current.setGender(z(gender)); // DB check Male/Female; để null nếu "--"
+        current.setGender(z(gender));
         current.setAddress(z(address));
         current.setEmail(z(email));
         current.setProfilePicture(profilePicturePath);
 
-        // 7) Lưu DB + xử lý lỗi rõ ràng
         try {
             boolean ok = userDAO.updateProfile(current);
             if (!ok) {
@@ -173,16 +207,13 @@ public class UpdateProfileServlet extends HttpServlet {
                 return;
             }
 
-            // 8) Cập nhật lại session user để UI hiển thị mới
             session.setAttribute("user", current);
 
-            // 9) Redirect về ViewProfileServlet (đúng flow MVC, có success)
             resp.sendRedirect(req.getContextPath() + "/ViewProfileServlet?success=1");
             return;
 
         } catch (SQLException ex) {
             log.log(Level.SEVERE, "Update profile failed", ex);
-            // Đoán nhanh lỗi UNIQUE (email/phone) để hiện thông báo thân thiện
             String msg = ex.getMessage();
             String friendly = "Có lỗi khi lưu dữ liệu.";
             if (msg != null) {

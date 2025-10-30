@@ -82,7 +82,7 @@
                             <div class="relative">
                                 <button onclick="toggleDropdown()" class="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-full transition duration-200">
                                     <i class="bx bx-user text-blue-600"></i>
-                                    <span class="text-sm font-medium text-gray-700">Xin chào, ${sessionScope.user.fullName}</span>
+                                    <span class="text-sm font-medium text-gray-700">${sessionScope.user.fullName}</span>
                                     <i class="bx bx-chevron-down text-gray-500 transition-transform duration-200"></i>
                                 </button>
                                 <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible transform scale-95 transition-all duration-200 origin-top-right z-50">

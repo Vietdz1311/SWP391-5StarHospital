@@ -117,8 +117,8 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="detailedAddress">Detailed Address</label>
-                                <input required type="text" class="form-control" id="detailedAddress" name="detailedAddress" placeholder="Enter detailed address">
+                                <label for="address">Address</label>
+                                <input required type="text" class="form-control" id="address" name="address" placeholder="Enter address">
                             </div>
                             <button type="submit" class="btn btn-primary btn-block">Register</button>
                             <p class="text-center mt-3">Already have an account? <a href="auth">Login</a></p>

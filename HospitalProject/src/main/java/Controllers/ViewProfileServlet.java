@@ -72,7 +72,6 @@ public class ViewProfileServlet extends HttpServlet {
             return;
         }
 
-        // Nếu muốn luôn lấy dữ liệu mới nhất từ DB:
         User user = userDAO.getUserById(sessionUser.getId());
         if (user == null) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "User not found");
@@ -80,7 +79,6 @@ public class ViewProfileServlet extends HttpServlet {
         }
 
         req.setAttribute("user", user);
-        // Đảm bảo file tồn tại đúng đường dẫn này. Nếu bạn để dưới /WEB-INF/views, hãy đổi lại cho khớp.
         req.getRequestDispatcher("/web-page/profile.jsp").forward(req, resp);
     }
 

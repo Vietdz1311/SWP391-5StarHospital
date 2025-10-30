@@ -52,13 +52,16 @@ public class AuthController extends HttpServlet {
         switch (action) {
             case "register":
                 try {
-                    List<Map<String, String>> provinces = fetchProvinces();
-                    request.setAttribute("provinces", provinces);
-                } catch (Exception e) {
-                    System.out.println("Error fetching provinces: " + e.getMessage());
-                    request.setAttribute("error", "Failed to load provinces. Please try again.");
-                }
-                request.getRequestDispatcher("./web-page/register.jsp").forward(request, response);
+                List<Map<String, String>> provinces = fetchProvinces();
+                request.setAttribute("provinces", provinces);
+            } catch (Exception e) {
+                System.out.println("Error fetching provinces: " + e.getMessage());
+                request.setAttribute("error", "Failed to load provinces. Please try again.");
+            }
+            request.getRequestDispatcher("./web-page/register.jsp").forward(request, response);
+            break;
+            case "login":
+                request.getRequestDispatcher("./web-page/login.jsp").forward(request, response);
                 break;
             case "getCommunes":
                 String provinceCode = request.getParameter("provinceCode");
@@ -283,7 +286,7 @@ public class AuthController extends HttpServlet {
 
                     String emailBody = /* (đoạn HTML email giữ nguyên như bạn đã gửi) */ "";
                     emailService.sendEmail(user.getEmail(), "Xác nhận tài khoản - Bệnh viện Tâm Đức", emailBody, null);
-                    response.sendRedirect("auth?success=Đăng ký thành công, vui lòng kiểm tra email để kích hoạt tài khoản");
+                    response.sendRedirect("auth?action=login&success=Đăng ký thành công, hãy đăng nhập");
                 } else {
                     response.sendRedirect("auth?action=register&error=Failed to send activation email");
                 }
@@ -306,11 +309,9 @@ public class AuthController extends HttpServlet {
         }
 
         UserDAO userDAO = new UserDAO();
-        // Nếu DB đang lưu password MD5, bật 2 dòng dưới và tắt login thường.
-        // MD5Hashing md5 = new MD5Hashing();
-        // User user = userDAO.login(email, md5.hashPassword(password));
 
-        User user = userDAO.login(email, password);
+        MD5Hashing md5 = new MD5Hashing();
+        User user = userDAO.login(email, md5.hashPassword(password));
 
         if (user != null) {
             HttpSession session = request.getSession();
