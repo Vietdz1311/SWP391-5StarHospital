@@ -1,4 +1,4 @@
-package DAO;
+package Dao;
 
 import DBConnection.DBConnection;
 import Model.OTP;

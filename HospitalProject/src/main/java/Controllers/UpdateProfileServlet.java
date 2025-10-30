@@ -4,7 +4,7 @@
  */
 package Controllers;
 
-import DAO.UserDAO;
+import Dao.UserDAO;
 import Model.User;
 
 import java.io.IOException;

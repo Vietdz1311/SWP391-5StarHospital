@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bệnh viện Đa khoa Tâm Đức - Chăm sóc sức khỏe toàn diện</title>
+    <title>5 Star Hospital</title>
     <link rel="stylesheet" href="css/style.css" />
     <!-- CSS riêng (nếu có) -->
     <%
@@ -47,7 +47,7 @@
                     <div class="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md group-hover:shadow-lg transition-all duration-300 transform group-hover:scale-105">
                         <i class="bx bx-heart text-white text-xl"></i>
                     </div>
-                    <span class="text-xl font-bold text-gray-900">Bệnh viện Tâm Đức</span>
+                    <span class="text-xl font-bold text-gray-900">5 Star Hospital</span>
                 </a>
 
                 <!-- Desktop Navigation -->

@@ -1,8 +1,8 @@
 package Controllers;
 
-import DAO.UserDAO;
+import Dao.UserDAO;
 import Model.User;
-import Utils.MD5Hashing;   // ✅ thêm dòng này
+import Utils.MD5Hashing;   
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;

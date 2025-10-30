@@ -1,7 +1,7 @@
 package Controllers;
 
-import DAO.DoctorDAO;
-import DAO.SpecializationDAO;
+import Dao.DoctorDAO;
+import Dao.SpecializationDAO;
 import Model.Doctor;
 import Model.Specialization;
 import jakarta.servlet.ServletException;

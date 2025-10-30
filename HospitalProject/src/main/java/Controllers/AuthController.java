@@ -1,6 +1,6 @@
 package Controllers;
 
-import DAO.UserDAO;
+import Dao.UserDAO;
 import Model.OTP;
 import Model.User;
 import Utils.ApiEndpoint;
