@@ -280,12 +280,8 @@ public class AuthController extends HttpServlet {
             user.setIdCardNumber(idCardNumber);
             user.setBirthDate(birthDate);
             user.setGender(gender);
-            user.setProvinceCity(provinceName);
-            user.setWardCommune(wardCommune);
-            user.setDetailedAddress(detailedAddress);
             user.setUsername(username);
             user.setProfilePicture(profilePicture);
-            user.setCountry("Vietnam"); 
             user.setStatus("pending");
             user.setCreatedAt(LocalDateTime.now());
             user.setUpdatedAt(LocalDateTime.now());

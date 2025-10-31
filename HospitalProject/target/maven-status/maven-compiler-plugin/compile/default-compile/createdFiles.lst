@@ -1,9 +1,13 @@
 Model\Room.class
+Utils\Email.class
 Model\Prescription.class
 Model\Category.class
 Model\Post.class
+Controllers\AppointmentListController.class
+Utils\ApiEndpoint.class
 Utils\Upload.class
 Model\Notification.class
+Utils\AppConstants$Avatar.class
 Model\AuditLog.class
 Model\TimeSlot.class
 Utils\Validation.class
@@ -12,11 +16,16 @@ DAO\DoctorDAO.class
 Model\Document.class
 DAO\UserDAO.class
 DBConnection\DBConnection.class
+Utils\MD5Hashing.class
 Model\Hospital.class
 Model\MedicalRecord.class
+Utils\AppConstants.class
 Model\OTP.class
 Model\HealthInsurance.class
+Utils\AppConstants$Api.class
 Controllers\HomeController.class
+Utils\Email$1.class
+DAO\AppointmentDAO.class
 Model\Appointment.class
 Model\Specialization.class
 Model\User.class
@@ -27,3 +36,4 @@ Model\FamilyMember.class
 Model\Doctor.class
 Model\Role.class
 Model\Area.class
+Controllers\AuthController.class

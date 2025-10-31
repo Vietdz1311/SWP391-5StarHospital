@@ -68,7 +68,7 @@
                         <i class="bx bx-news"></i>
                         <span>Tin tức</span>
                     </a>
-                    <a href="appointments.jsp" class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 font-medium transition duration-200">
+                    <a href="appointments" class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 font-medium transition duration-200">
                         <i class="bx bx-calendar-check"></i>
                         <span>Lịch hẹn</span>
                     </a>

@@ -82,45 +82,41 @@ public class UserDAO {
     }
 
     public int addUser(User user) {
-        String query = "INSERT INTO Users (role_id, full_name, id_card_number, phone_number, birth_date, gender, " +
-                      "original_address, country, ethnicity, occupation, province_city, ward_commune, detailed_address, " +
-                      "username, profile_picture, email, password, status, created_at, updated_at, created_by, updated_by) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = conn.prepareStatement(query, PreparedStatement.RETURN_GENERATED_KEYS)) {
-            statement.setInt(1, user.getRoleId());
-            statement.setString(2, user.getFullName());
-            statement.setString(3, user.getIdCardNumber());
-            statement.setString(4, user.getPhoneNumber());
-            statement.setObject(5, user.getBirthDate());
-            statement.setString(6, user.getGender());
-            statement.setString(7, user.getOriginalAddress());
-            statement.setString(8, user.getCountry());
-            statement.setString(9, user.getEthnicity());
-            statement.setString(10, user.getOccupation());
-            statement.setString(11, user.getProvinceCity());
-            statement.setString(12, user.getWardCommune());
-            statement.setString(13, user.getDetailedAddress());
-            statement.setString(14, user.getUsername());
-            statement.setString(15, user.getProfilePicture());
-            statement.setString(16, user.getEmail());
-            statement.setString(17, user.getPassword());
-            statement.setString(18, user.getStatus());
-            statement.setObject(19, user.getCreatedAt());
-            statement.setObject(20, user.getUpdatedAt());
-            statement.setObject(21, user.getCreatedBy());
-            statement.setObject(22, user.getUpdatedBy());
-            int rowsAffected = statement.executeUpdate();
-            if (rowsAffected > 0) {
-                ResultSet generatedKeys = statement.getGeneratedKeys();
+    String query = "INSERT INTO Users (role_id, full_name, id_card_number, phone_number, birth_date, gender, " +
+                   "address, username, profile_picture, email, password, status, created_at, updated_at, created_by, updated_by) " +
+                   "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    try (PreparedStatement statement = conn.prepareStatement(query, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        statement.setInt(1, user.getRoleId());
+        statement.setString(2, user.getFullName());
+        statement.setString(3, user.getIdCardNumber());
+        statement.setString(4, user.getPhoneNumber());
+        statement.setObject(5, user.getBirthDate());
+        statement.setString(6, user.getGender());
+        statement.setString(7, user.getAddress());
+        statement.setString(8, user.getUsername());
+        statement.setString(9, user.getProfilePicture());
+        statement.setString(10, user.getEmail());
+        statement.setString(11, user.getPassword());
+        statement.setString(12, user.getStatus());
+        statement.setObject(13, user.getCreatedAt());
+        statement.setObject(14, user.getUpdatedAt());
+        statement.setObject(15, user.getCreatedBy());
+        statement.setObject(16, user.getUpdatedBy());
+
+        int rowsAffected = statement.executeUpdate();
+        if (rowsAffected > 0) {
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     return generatedKeys.getInt(1);
                 }
             }
-        } catch (SQLException e) {
-            System.out.println("Add user error: " + e.getMessage());
         }
-        return 0;
+    } catch (SQLException e) {
+        System.out.println("Add user error: " + e.getMessage());
     }
+    return 0;
+}
+
 
     public int updatePassword(String password, int id) {
         String query = "UPDATE Users SET password = ?, updated_at = ? WHERE id = ?";
@@ -272,13 +268,6 @@ public class UserDAO {
         user.setPhoneNumber(resultSet.getString("phone_number"));
         user.setBirthDate(resultSet.getObject("birth_date", LocalDate.class));
         user.setGender(resultSet.getString("gender"));
-        user.setOriginalAddress(resultSet.getString("original_address"));
-        user.setCountry(resultSet.getString("country"));
-        user.setEthnicity(resultSet.getString("ethnicity"));
-        user.setOccupation(resultSet.getString("occupation"));
-        user.setProvinceCity(resultSet.getString("province_city"));
-        user.setWardCommune(resultSet.getString("ward_commune"));
-        user.setDetailedAddress(resultSet.getString("detailed_address"));
         user.setUsername(resultSet.getString("username"));
         user.setProfilePicture(resultSet.getString("profile_picture"));
         user.setEmail(resultSet.getString("email"));

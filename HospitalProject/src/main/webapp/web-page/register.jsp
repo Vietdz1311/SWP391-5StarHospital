@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -116,27 +117,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="provinceCity">Province/City</label>
-                                        <select required class="form-control" id="provinceCity" name="provinceCity">
-                                            <option value="">Select province</option>
-                                            <c:forEach var="prov" items="${provinces}">
-                                                <option value="${prov.code}">${prov.name}</option>
-                                            </c:forEach>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="wardCommune">Ward/Commune</label>
-                                        <select required class="form-control" id="wardCommune" name="wardCommune">
-                                            <option value="">Select ward/commune</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="form-group">
                                 <label for="detailedAddress">Detailed Address</label>
                                 <input required type="text" class="form-control" id="detailedAddress" name="detailedAddress" placeholder="Enter detailed address">
@@ -149,35 +129,5 @@
             </div>
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const provinceSelect = document.getElementById('provinceCity');
-            const wardSelect = document.getElementById('wardCommune');
-
-            provinceSelect.addEventListener('change', async () => {
-                const provinceCode = provinceSelect.value.trim();
-                wardSelect.innerHTML = '<option value="">Select ward/commune</option>';
-                
-                if (provinceCode) {
-                    try {
-                        const response = await fetch("auth?action=getCommunes&provinceCode=" + provinceCode);
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch communes');
-                        }
-                        const data = await response.json();
-                        data.communes.forEach(commune => {
-                            const option = document.createElement('option');
-                            option.value = commune.name;
-                            option.textContent = commune.name;
-                            wardSelect.appendChild(option);
-                        });
-                    } catch (error) {
-                        console.error('Error fetching communes:', error);
-                        alert('Failed to load communes. Please try again.');
-                    }
-                }
-            });
-        });
-    </script>
 </body>
 </html>
