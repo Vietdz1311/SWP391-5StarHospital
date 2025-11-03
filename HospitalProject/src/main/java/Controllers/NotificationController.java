@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "NotificationController", urlPatterns = {"/notifications"})
@@ -77,8 +78,8 @@ public class NotificationController extends HttpServlet {
         }
 
         Integer userId = null;
-        // If user is not admin, only show their notifications
-        if (user.getRoleId() != 1) { // Assuming 1 is admin role
+        // If user is not admin (roleId 3), only show their notifications
+        if (user.getRoleId() != 3) { // 3 is admin role
             userId = user.getId();
         }
 
@@ -95,11 +96,11 @@ public class NotificationController extends HttpServlet {
         int total = dao.getTotalNotifications(userId, type, status);
         int totalPages = (int) Math.ceil((double) total / PAGE_SIZE);
 
-        request.setAttribute("notifications", notifications);
-        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("notifications", notifications != null ? notifications : new java.util.ArrayList<>());
+        request.setAttribute("totalPages", totalPages > 0 ? totalPages : 1);
         request.setAttribute("currentPage", page);
-        request.setAttribute("type", type);
-        request.setAttribute("status", status);
+        request.setAttribute("type", type != null ? type : "");
+        request.setAttribute("status", status != null ? status : "");
 
         request.getRequestDispatcher("./web-page/notifications.jsp").forward(request, response);
     }
@@ -126,9 +127,9 @@ public class NotificationController extends HttpServlet {
             User user = (User) session.getAttribute("user");
             
             // Check if user can view this notification (owner or admin)
-            if (user != null && (user.getRoleId() == 1 || user.getId() == notification.getUserId())) {
-                // Mark as read if unread
-                if ("unread".equalsIgnoreCase(notification.getStatus())) {
+            if (user != null && (user.getRoleId() == 3 || user.getId() == notification.getUserId())) {
+                // Mark as read if status is 'sent' (sent but not read yet)
+                if ("sent".equalsIgnoreCase(notification.getStatus())) {
                     dao.markAsRead(id, user.getId());
                 }
                 
@@ -152,17 +153,40 @@ public class NotificationController extends HttpServlet {
             return;
         }
 
-        // Only admin can send notifications
-        if (user.getRoleId() != 1) {
+        // Allow patient (roleId 1), doctor (roleId 2), and admin (roleId 3) to send notifications
+        int userRoleId = user.getRoleId();
+        if (userRoleId != 1 && userRoleId != 2 && userRoleId != 3) {
             response.sendRedirect("notifications?error=You don't have permission to send notifications");
             return;
         }
 
-        // Load users for selection
+        // Load users for selection based on role
         UserDAO userDAO = new UserDAO();
-        List<User> users = userDAO.getAllUsers();
+        List<User> users = new ArrayList<>();
+        
+        try {
+            // Admin, Patient, and Doctor can all send to all active users
+            // Only restriction is they cannot send to themselves
+            users = userDAO.getAllUsers();
+            
+            // Ensure users list is not null
+            if (users == null) {
+                users = new ArrayList<>();
+            }
+            
+            // Exclude current user from the list
+            final int currentUserId = user.getId();
+            users.removeIf(u -> u != null && u.getId() == currentUserId);
+            
+            System.out.println("Loaded " + users.size() + " users for notification sending (userRole: " + userRoleId + ")");
+        } catch (Exception e) {
+            System.out.println("Error loading users for notification: " + e.getMessage());
+            e.printStackTrace();
+            users = new ArrayList<>();
+        }
+        
         request.setAttribute("users", users);
-
+        request.setAttribute("userRole", userRoleId);
         request.getRequestDispatcher("./web-page/send-notification.jsp").forward(request, response);
     }
 
@@ -176,8 +200,9 @@ public class NotificationController extends HttpServlet {
             return;
         }
 
-        // Only admin can send notifications
-        if (user.getRoleId() != 1) {
+        // Allow patient (roleId 1), doctor (roleId 2), and admin (roleId 3) to send notifications
+        int userRoleId = user.getRoleId();
+        if (userRoleId != 1 && userRoleId != 2 && userRoleId != 3) {
             response.sendRedirect("notifications?error=You don't have permission to send notifications");
             return;
         }
@@ -195,6 +220,13 @@ public class NotificationController extends HttpServlet {
 
         try {
             int userId = Integer.parseInt(userIdStr);
+            
+            // Prevent sending to yourself
+            if (userId == user.getId()) {
+                response.sendRedirect("notifications?action=send&error=Cannot send notification to yourself");
+                return;
+            }
+            
             UserDAO userDAO = new UserDAO();
             User targetUser = userDAO.getUserById(userId);
 
@@ -203,13 +235,30 @@ public class NotificationController extends HttpServlet {
                 return;
             }
 
+            // No role-based restrictions - all users (Patient, Doctor, Admin) can send to anyone
+            // Only restriction is they cannot send to themselves (already checked above)
+
             NotificationDAO dao = new NotificationDAO();
             Notification notification = new Notification();
             notification.setUserId(userId);
-            notification.setType(type.trim());
+            
+            // Validate and set type - database only allows: 'appointment_reminder', 're_examination', 'otp', 'general'
+            String notificationType = type.trim().toLowerCase();
+            if (!notificationType.equals("appointment_reminder") && 
+                !notificationType.equals("re_examination") && 
+                !notificationType.equals("otp") && 
+                !notificationType.equals("general")) {
+                // Default to 'general' if type is not in allowed list
+                notificationType = "general";
+            }
+            notification.setType(notificationType);
             notification.setContent(content.trim());
             notification.setSentAt(LocalDateTime.now());
-            notification.setStatus("unread");
+            
+            // Status must be 'sent', 'read', or 'failed' (not 'unread')
+            // Set to 'sent' for newly created notifications
+            notification.setStatus("sent");
+            
             notification.setCreatedAt(LocalDateTime.now());
             notification.setUpdatedAt(LocalDateTime.now());
             notification.setCreatedBy(user.getId());
@@ -264,7 +313,13 @@ public class NotificationController extends HttpServlet {
                 response.sendRedirect("notifications?action=send&error=Failed to send notification");
             }
         } catch (NumberFormatException e) {
+            System.out.println("Invalid user ID: " + e.getMessage());
+            e.printStackTrace();
             response.sendRedirect("notifications?action=send&error=Invalid user ID");
+        } catch (Exception e) {
+            System.out.println("Error sending notification: " + e.getMessage());
+            e.printStackTrace();
+            response.sendRedirect("notifications?action=send&error=Failed to send notification: " + e.getMessage());
         }
     }
 
@@ -282,7 +337,7 @@ public class NotificationController extends HttpServlet {
         
         // Get user's notifications
         Integer userId = null;
-        if (user.getRoleId() != 1) {
+        if (user.getRoleId() != 3) { // 3 is admin role
             userId = user.getId();
         }
 
@@ -320,15 +375,15 @@ public class NotificationController extends HttpServlet {
             }
 
             // Check if user can update this notification
-            if (user.getRoleId() != 1 && user.getId() != notification.getUserId()) {
+            if (user.getRoleId() != 3 && user.getId() != notification.getUserId()) { // 3 is admin role
                 response.sendRedirect("notifications?error=You don't have permission to update this notification");
                 return;
             }
 
-            // Validate status
-            if (!status.equalsIgnoreCase("read") && !status.equalsIgnoreCase("unread") && 
-                !status.equalsIgnoreCase("archived")) {
-                response.sendRedirect("notifications?error=Invalid status");
+            // Validate status - only 'sent', 'read', 'failed' are allowed in database
+            if (!status.equalsIgnoreCase("sent") && !status.equalsIgnoreCase("read") && 
+                !status.equalsIgnoreCase("failed")) {
+                response.sendRedirect("notifications?error=Invalid status. Allowed values: sent, read, failed");
                 return;
             }
 
@@ -360,7 +415,7 @@ public class NotificationController extends HttpServlet {
         if (result > 0) {
             response.sendRedirect("notifications?success=All notifications marked as read");
         } else {
-            response.sendRedirect("notifications?info=No unread notifications");
+            response.sendRedirect("notifications?info=No unread notifications (all notifications are already read)");
         }
     }
 }
