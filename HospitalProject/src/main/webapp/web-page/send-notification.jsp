@@ -34,14 +34,32 @@
                         <i class='bx bx-user mr-2 text-blue-600'></i>
                         Người nhận <span class="text-red-500">*</span>
                     </label>
-                    <select name="userId" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-white">
-                        <option value="" disabled selected>-- Chọn người dùng --</option>
-                        <c:forEach var="u" items="${users}">
-                            <option value="${u.id}">${u.fullName} <c:if test="${u.email != null}">(${u.email})</c:if></option>
-                        </c:forEach>
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500">Chọn người dùng sẽ nhận thông báo</p>
+                    <c:choose>
+                        <c:when test="${empty users}">
+                            <select name="userId" disabled
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
+                                <option value="" disabled selected>Không có người dùng nào để gửi</option>
+                            </select>
+                            <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p class="text-sm text-yellow-800">
+                                    <i class='bx bx-info-circle mr-1'></i>
+                                    Hiện tại không có người dùng nào đang hoạt động để gửi thông báo.
+                                </p>
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <select name="userId" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-white">
+                                <option value="" disabled selected>-- Chọn người dùng --</option>
+                                <c:forEach var="u" items="${users}">
+                                    <option value="${u.id}">${u.fullName} <c:if test="${u.email != null}">(${u.email})</c:if></option>
+                                </c:forEach>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Chọn người dùng sẽ nhận thông báo
+                            </p>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
 
                 <!-- Type Field -->
@@ -50,10 +68,15 @@
                         <i class='bx bx-category mr-2 text-blue-600'></i>
                         Loại thông báo <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" name="type" placeholder="VD: system, reminder, appointment..." required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                           value="${param.type != null ? param.type : ''}" />
-                    <p class="mt-1 text-xs text-gray-500">Nhập loại thông báo (VD: system, reminder, appointment)</p>
+                    <select name="type" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 bg-white">
+                        <option value="" disabled selected>-- Chọn loại thông báo --</option>
+                        <option value="general" ${param.type == 'general' ? 'selected' : ''}>Thông báo chung</option>
+                        <option value="appointment_reminder" ${param.type == 'appointment_reminder' ? 'selected' : ''}>Nhắc nhở lịch hẹn</option>
+                        <option value="re_examination" ${param.type == 're_examination' ? 'selected' : ''}>Tái khám</option>
+                        <option value="otp" ${param.type == 'otp' ? 'selected' : ''}>Mã OTP</option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">Chọn loại thông báo phù hợp</p>
                 </div>
 
                 <!-- Content Field -->
@@ -107,7 +130,10 @@
                     <ul class="text-xs text-blue-800 space-y-1 list-disc list-inside">
                         <li>Thông báo sẽ được lưu vào hệ thống và có thể xem trong phần "Thông báo"</li>
                         <li>Nếu chọn "Gửi kèm email", thông báo sẽ được gửi qua email nếu người dùng có địa chỉ email hợp lệ</li>
-                        <li>Chỉ Admin mới có quyền gửi thông báo</li>
+                        <c:if test="${userRole == 3}">
+                            <li class="font-semibold">Bạn đang là <strong>Admin</strong> - có thể gửi thông báo cho tất cả người dùng</li>
+                        </c:if>
+                        <li>Không thể gửi thông báo cho chính mình</li>
                     </ul>
                 </div>
             </div>
